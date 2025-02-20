@@ -2,7 +2,7 @@
 *& Report  z_for_new_abap
 *&
 *&---------------------------------------------------------------------*
-*&    Test Program for FOR expression 
+*&    Test Program for FOR expression From Eclipse
 *&
 *&---------------------------------------------------------------------*
 REPORT z_for_new_abap.
