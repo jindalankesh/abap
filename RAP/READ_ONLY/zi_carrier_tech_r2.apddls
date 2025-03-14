@@ -1,0 +1,20 @@
+@AbapCatalog.viewEnhancementCategory: [#NONE]
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+@EndUserText.label: 'Carrier Detail'
+@Metadata.ignorePropagatedAnnotations: true
+@ObjectModel.usageType:{
+    serviceQuality: #X,
+    sizeCategory: #S,
+    dataClass: #MIXED
+}
+@Search.searchable: true
+define view entity ZI_CARRIER_TECH_R2
+  as select from /dmo/carrier
+{
+  key carrier_id    as CarrierId,
+      @Search.defaultSearchElement: true
+      @Semantics.text: true
+      @Search.fuzzinessThreshold: 0.8
+      name          as Name,
+      currency_code as CurrencyCode
+}

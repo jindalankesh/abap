@@ -12,11 +12,11 @@
     typeNamePlural: 'Connections'
     }
 @Search.searchable: true
-define view entity ZI_Connection_Tech_r
+define view entity ZI_CONNECTION_TECH_R2
   as select from /dmo/connection as Connection
-  association [1..*] to ZI_FLIGHT_TECH_R  as _Flight  on  $projection.CarrierId    = _Flight.CarrierId
-                                                      and $projection.ConnectionId = _Flight.ConnectionId
-  association [1]    to ZI_CARRIER_TECH_R as _Airline on  $projection.CarrierId = _Airline.CarrierId
+  association [1..*] to ZI_FLIGHT_TECH_R2  as _Flight  on  $projection.CarrierId    = _Flight.CarrierId
+                                                       and $projection.ConnectionId = _Flight.ConnectionId
+  association [1]    to ZI_CARRIER_TECH_R2 as _Airline on  $projection.CarrierId = _Airline.CarrierId
 {
       @UI.facet: [{ id: 'Connection',
                     purpose: #STANDARD,
@@ -46,7 +46,7 @@ define view entity ZI_Connection_Tech_r
       @UI.identification: [{ position: 30, label: 'Departure Airport ID' }]
       @Search.defaultSearchElement: true
       @Consumption.valueHelpDefinition: [{ entity: {
-          name: 'ZI_airport_tech_VH',
+          name: 'ZI_AIRPORT_IH_VH_R2',
           element: 'AirportId'
       } }]
       airport_from_id as AirportFromId,
@@ -55,7 +55,7 @@ define view entity ZI_Connection_Tech_r
       @UI.identification: [{ position: 40 }]
       @Search.defaultSearchElement: true
       @Consumption.valueHelpDefinition: [{ entity: {
-          name: 'ZI_airport_tech_VH',
+          name: 'ZI_AIRPORT_IH_VH_R2',
           element: 'AirportId'
       } }]
       @EndUserText.label: 'Destination Airport ID'

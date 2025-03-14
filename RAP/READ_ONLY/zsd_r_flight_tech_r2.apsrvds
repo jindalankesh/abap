@@ -1,0 +1,5 @@
+@EndUserText.label: 'Service Defination'
+define service ZSD_R_FLIGHT_TECH_R2 {
+  expose ZI_CONNECTION_TECH_R2;
+  expose ZI_AIRPORT_IH_VH_R2;
+}
