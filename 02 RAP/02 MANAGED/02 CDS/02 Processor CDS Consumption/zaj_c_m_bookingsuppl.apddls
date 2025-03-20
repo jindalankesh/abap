@@ -1,0 +1,21 @@
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+@EndUserText.label: 'Projection View Booking Supplement'
+@Metadata.ignorePropagatedAnnotations: true
+define view entity ZAJ_C_M_BOOKINGSUPPL
+  as projection on zaj_i_m_bookingsuppl
+{
+  key TravelId,
+  key BookingId,
+  key BookingSupplementId,
+      SupplementId,
+      @Semantics.amount.currencyCode: 'CurrencyCode'
+      Price,
+      CurrencyCode,
+      LastChangedAt,
+      /* Associations */
+      _Travel, //: redirected to ZAJ_C_M_TRAVEL,
+      _Booking : redirected to parent ZAJ_C_M_BOOKING,
+      _Supplement,
+      _SupplementText
+
+}

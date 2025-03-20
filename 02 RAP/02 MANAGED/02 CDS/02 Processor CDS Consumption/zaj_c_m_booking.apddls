@@ -1,0 +1,26 @@
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+@EndUserText.label: 'Projection View Booking'
+@Metadata.ignorePropagatedAnnotations: true
+define view entity ZAJ_C_M_BOOKING
+  as projection on ZAJ_I_M_BOOKING
+{
+  key TravelId,
+  key BookingId,
+      BookingDate,
+      CustomerId,
+      CarrierId,
+      ConnectionId,
+      FlightDate,
+      @Semantics.amount.currencyCode: 'CurrencyCode'
+      FlightPrice,
+      CurrencyCode,
+      BookingStatus,
+      LastChangedAt,
+      /* Associations */
+      _Bookingsuppl : redirected to composition child ZAJ_C_M_BOOKINGSUPPL,
+      _Booking_Status,
+      _Carrier,
+      _Connection,
+      _Customer,
+      _Travel       : redirected to parent ZAJ_C_M_TRAVEL
+}
