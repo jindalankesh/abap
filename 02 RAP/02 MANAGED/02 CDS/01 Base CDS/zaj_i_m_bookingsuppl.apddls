@@ -11,7 +11,7 @@ define view entity zaj_i_m_bookingsuppl
   as select from yaj_db_m_booksup
   association        to parent ZAJ_I_M_BOOKING as _Booking        on  $projection.TravelId  = _Booking.TravelId
                                                                   and $projection.BookingId = _Booking.BookingId
-  association [1..1] to YI_TRAVEL_TECH_M       as _Travel         on  $projection.TravelId = _Travel.TravelId
+  association [1..1] to zaj_i_m_travel         as _Travel         on  $projection.TravelId = _Travel.TravelId
   association [1..1] to /DMO/I_Supplement      as _Supplement     on  $projection.SupplementId = _Supplement.SupplementID
   association [1..*] to /DMO/I_SupplementText  as _SupplementText on  $projection.SupplementId = _SupplementText.SupplementID
 

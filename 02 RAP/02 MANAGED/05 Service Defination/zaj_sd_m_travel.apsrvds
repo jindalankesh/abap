@@ -1,0 +1,6 @@
+@EndUserText.label: 'SD Managed Travel'
+define service ZAJ_SD_M_TRAVEL {
+  expose ZAJ_C_M_TRAVEL;
+  expose ZAJ_C_M_BOOKING;
+  expose ZAJ_C_M_BOOKINGSUPPL;
+}
