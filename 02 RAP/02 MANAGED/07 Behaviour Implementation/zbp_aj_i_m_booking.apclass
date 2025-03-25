@@ -1,0 +1,5 @@
+CLASS zbp_aj_i_m_booking DEFINITION PUBLIC ABSTRACT FINAL FOR BEHAVIOR OF zaj_i_m_travel.
+ENDCLASS.
+
+CLASS zbp_aj_i_m_booking IMPLEMENTATION.
+ENDCLASS.

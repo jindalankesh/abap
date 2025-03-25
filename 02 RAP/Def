@@ -1,0 +1,4 @@
+Action
+Non-Factory : Custom logic that changes existing entity instance
+Factory : Create new RAP BO entity instance
+Save : Executed during RAP save sequence - can be non-factory or factory action

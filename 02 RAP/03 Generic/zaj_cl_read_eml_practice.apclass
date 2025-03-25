@@ -1,0 +1,134 @@
+CLASS zaj_cl_read_eml_practice DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+    INTERFACES if_oo_adt_classrun.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS zaj_cl_read_eml_practice IMPLEMENTATION.
+
+  METHOD if_oo_adt_classrun~main.
+
+* Short form Read FROM VALUE
+*    READ ENTITY zaj_i_m_travel
+*    FROM VALUE #( ( %key-TravelId = '00000001'
+*                     %control = VALUE #( AgencyId = if_abap_behv=>mk-on
+*                                         CustomerId = if_abap_behv=>mk-on
+*                                         BeginDate =  if_abap_behv=>mk-on )
+*
+*                  ) )
+*    RESULT DATA(lt_result_short)
+*    FAILED DATA(lt_failed_short)
+*    .
+*    IF lt_failed_short IS NOT INITIAL.
+*      out->write( 'Read Failed' ) .
+*    ELSE.
+*      out->write( lt_result_short ) .
+*
+*    ENDIF.
+
+** Short form Read WITH VALUE
+*    READ ENTITY zaj_i_m_travel
+*    by \_Booking
+*    ALL FIELDS
+**    FIELDS ( AgencyId CustomerId CreatedAt Description )
+*    WITH VALUE #( ( %key-TravelId = '00000001' )
+*                  (   %key-TravelId = '00000002'  )
+*                   )
+*    RESULT DATA(lt_result_short)
+*    FAILED DATA(lt_failed_short)
+*    .
+*    IF lt_failed_short IS NOT INITIAL.
+*      out->write( 'Read Failed' ) .
+*    ELSE.
+*      out->write( lt_result_short ) .
+*
+*    ENDIF.
+
+** Long form Read WITH VALUE
+*    READ ENTITIES OF zaj_i_m_travel
+*    ENTITY zaj_i_m_travel
+*    ALL FIELDS
+*    WITH VALUE #( ( %key-TravelId = '00000001' )
+*                  (   %key-TravelId = '00000002'  )
+*                   )
+*    RESULT DATA(lt_result_travel)
+*
+*    ENTITY zaj_i_m_booking
+*    ALL FIELDS
+*    WITH VALUE #( ( %key-TravelId = '00000001'
+*                    %key-BookingId = '0001'
+*                     )
+*                  (   %key-TravelId = '00000002'
+*                      %key-BookingId = '0001'  )
+*                   )
+*    RESULT DATA(lt_result_booking)
+*
+*
+*    FAILED DATA(lt_failed_short)
+*    .
+*    IF lt_failed_short IS NOT INITIAL.
+*      out->write( 'Read Failed' ) .
+*    ELSE.
+*      out->write( lt_result_travel ) .
+*      out->write( lt_result_booking ) .
+*
+*    ENDIF.
+
+
+* Dynamic
+
+    DATA : it_optab         TYPE abp_behv_retrievals_tab,
+           it_travel        TYPE TABLE FOR READ IMPORT zaj_i_m_travel,
+           it_travel_result TYPE TABLE FOR READ RESULT zaj_i_m_travel,
+           it_booking       TYPE TABLE FOR READ IMPORT zaj_i_m_travel\_Booking,
+           it_booking_result TYPE TABLE FOR READ RESULT zaj_i_m_travel\_Booking.
+
+
+    it_travel = VALUE #( ( %key-TravelId = '00000001'
+                           %control = VALUE #( AgencyId = if_abap_behv=>mk-on
+                                         CustomerId = if_abap_behv=>mk-on
+                                         BeginDate =  if_abap_behv=>mk-on ) )
+                        ( %key-TravelId = '00000002'
+                           %control = VALUE #( AgencyId = if_abap_behv=>mk-on
+                                         CustomerId = if_abap_behv=>mk-on
+                                         BeginDate =  if_abap_behv=>mk-on )                 ) ).
+
+  it_booking = VALUE #( ( %key-TravelId = '00000001'
+                           %control = VALUE #( BookingDate = if_abap_behv=>mk-on
+                                         BookingStatus = if_abap_behv=>mk-on
+                                         BookingId =  if_abap_behv=>mk-on ) ) ).
+    it_optab = VALUE #(
+                         ( op = if_abap_behv=>op-r
+                          entity_name = 'ZAJ_I_M_TRAVEL'
+                          instances = REF #( it_travel )
+                          results = REF #( it_travel_result ) )
+                         ( op = if_abap_behv=>op-r-read_ba
+                          entity_name = 'ZAJ_I_M_TRAVEL'
+                          sub_name = '_BOOKING'
+                          instances = REF #( it_booking )
+                          results = REF #( it_booking_result ) )
+
+                           ).
+
+    READ ENTITIES OPERATIONS it_optab
+     FAILED DATA(lt_failed_dy)
+     .
+    IF lt_failed_dy IS NOT INITIAL.
+      out->write( 'Read Failed' ) .
+    ELSE.
+      out->write( it_travel_result ) .
+      out->write( it_booking_result ) .
+
+    ENDIF.
+
+
+
+  ENDMETHOD.
+ENDCLASS.

@@ -1,0 +1,231 @@
+CLASS lhc_zaj_i_m_travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
+  PRIVATE SECTION.
+
+    METHODS get_instance_authorizations FOR INSTANCE AUTHORIZATION
+      IMPORTING keys REQUEST requested_authorizations FOR zaj_i_m_travel RESULT result.
+
+    METHODS accepttravel FOR MODIFY
+      IMPORTING keys FOR ACTION zaj_i_m_travel~accepttravel RESULT result.
+
+    METHODS copytravel FOR MODIFY
+      IMPORTING keys FOR ACTION zaj_i_m_travel~copytravel.
+
+    METHODS recalctotprice FOR MODIFY
+      IMPORTING keys FOR ACTION zaj_i_m_travel~recalctotprice.
+
+    METHODS rejecttravel FOR MODIFY
+      IMPORTING keys FOR ACTION zaj_i_m_travel~rejecttravel RESULT result.
+
+    METHODS earlynumbering_cba_booking FOR NUMBERING
+      IMPORTING entities FOR CREATE zaj_i_m_travel\_booking.
+    METHODS earlynumbering_create FOR NUMBERING
+      IMPORTING entities FOR CREATE zaj_i_m_travel.
+
+ENDCLASS.
+
+CLASS lhc_zaj_i_m_travel IMPLEMENTATION.
+
+  METHOD get_instance_authorizations.
+  ENDMETHOD.
+
+  METHOD earlynumbering_create.
+
+    DATA(lt_entities) = entities.
+    DELETE lt_entities WHERE TravelId IS NOT INITIAL.
+    TRY.
+        cl_numberrange_runtime=>number_get(
+          EXPORTING
+            nr_range_nr       =   '01'
+            object            =   '/DMO/TRV_M'
+            quantity          =  CONV #( lines( lt_entities ) )
+          IMPORTING
+            number            = DATA(lv_latest_num)
+            returncode        = DATA(lv_code)
+            returned_quantity = DATA(lv_qty)
+        ).
+      CATCH cx_nr_object_not_found.
+      CATCH cx_number_ranges INTO DATA(lo_error).
+
+        LOOP AT lt_entities INTO DATA(ls_entities).
+          APPEND VALUE #( %cid = ls_entities-%cid
+                           %key = ls_entities-%key )  TO failed-zaj_i_m_travel.
+          APPEND VALUE #( %cid = ls_entities-%cid
+                          %key = ls_entities-%key
+                          %msg = lo_error   )  TO reported-zaj_i_m_travel.
+
+        ENDLOOP.
+        EXIT.
+    ENDTRY.
+
+    ASSERT lv_qty = lines( lt_entities ).
+
+*    DATA : lt_travel_tech_m TYPE TABLE FOR MAPPED EARLY zaj_i_m_travel,
+*           ls_travel_tech_m LIKE LINE OF lt_travel_tech_m.
+
+
+    DATA(lv_curr_num) = lv_latest_num - lv_qty.
+    LOOP AT lt_entities INTO ls_entities.
+
+      lv_curr_num = lv_curr_num + 1.
+
+      APPEND VALUE #( %cid = ls_entities-%cid
+                                       TravelId =  lv_curr_num    )
+      TO mapped-zaj_i_m_travel.
+**    ls_travel_tech_m = VALUE #( %cid = ls_entities-%cid
+*                                     TravelId =  lv_curr_num    ).
+*
+*   append ls_travel_tech_m to mapped-zaj_i_m_travel.
+
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD earlynumbering_cba_Booking.
+
+    DATA lv_max_booking TYPE /dmo/booking_id.
+
+    READ ENTITIES OF zaj_i_m_travel IN LOCAL MODE
+    ENTITY zaj_i_m_travel  BY \_Booking
+    FROM CORRESPONDING #( entities )
+    LINK DATA(lt_link_data).
+
+    LOOP AT entities ASSIGNING FIELD-SYMBOL(<ls_group_entities>)
+         GROUP BY <ls_group_entities>-TravelId.
+
+* Get Max Booking id from DB.
+      lv_max_booking = REDUCE #( INIT lv_max = CONV /dmo/booking_id( '0' )
+                                 FOR ls_link IN lt_link_data USING KEY entity
+                                 WHERE ( source-TravelId = <ls_group_entities>-TravelId )
+                                 NEXT lv_max = COND /dmo/booking_id(
+                                 WHEN lv_max < ls_link-target-BookingId
+                                 THEN  ls_link-target-BookingId
+                                 ELSE lv_max )
+                                 ).
+* Get Max Booking id from Screen
+      lv_max_booking = REDUCE #( INIT lv_max = lv_max_booking
+                                 FOR ls_entiy IN entities USING KEY entity
+                                 WHERE ( TravelId = <ls_group_entities>-TravelId )
+                                 FOR ls_booking IN ls_entiy-%target
+                                 NEXT lv_max = COND /dmo/booking_id(
+                                 WHEN lv_max < ls_booking-BookingId
+                                 THEN  ls_booking-BookingId
+                                 ELSE lv_max )
+                                 ).
+
+* For handling draft Scenario
+      LOOP AT entities
+      ASSIGNING FIELD-SYMBOL(<ls_ent_draft>)
+      USING KEY entity
+      WHERE TravelId = <ls_group_entities>-TravelId.
+
+        LOOP AT <ls_ent_draft>-%target ASSIGNING FIELD-SYMBOL(<ls_booking>).
+          APPEND CORRESPONDING #( <ls_booking> )  TO   mapped-zaj_i_m_booking
+          ASSIGNING FIELD-SYMBOL(<ls_new_mapped_book>).
+          IF <ls_booking>-BookingId IS INITIAL.
+            lv_max_booking = lv_max_booking + 1.
+            <ls_new_mapped_book>-BookingId = lv_max_booking.
+          ENDIF.
+        ENDLOOP.
+
+      ENDLOOP..
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD acceptTravel.
+  ENDMETHOD.
+
+  METHOD copyTravel.
+
+    DATA: it_travel        TYPE TABLE FOR CREATE zaj_i_m_travel,
+          it_booking_cba   TYPE TABLE FOR CREATE zaj_i_m_travel\_Booking,
+          it_booksuppl_cba TYPE TABLE FOR CREATE zaj_i_m_booking\_Bookingsuppl.
+
+    READ TABLE keys ASSIGNING FIELD-SYMBOL(<ls_without_cid>) WITH KEY %cid = ' '.
+
+    ASSERT <ls_without_cid> IS NOT ASSIGNED.
+
+    READ ENTITIES OF zaj_i_m_travel IN LOCAL MODE
+    ENTITY zaj_i_m_travel
+    ALL FIELDS WITH CORRESPONDING #( keys )
+    RESULT DATA(lt_travel_r)
+    FAILED DATA(lt_failed).
+
+    READ ENTITIES OF zaj_i_m_travel IN LOCAL MODE
+    ENTITY zaj_i_m_travel BY \_Booking
+    ALL FIELDS WITH CORRESPONDING #( lt_travel_r )
+    RESULT DATA(lt_booking_r).
+
+    READ ENTITIES OF zaj_i_m_travel IN LOCAL MODE
+    ENTITY zaj_i_m_booking BY \_Bookingsuppl
+    ALL FIELDS WITH CORRESPONDING #( lt_booking_r )
+    RESULT DATA(lt_booksuppl_r).
+
+
+    LOOP AT lt_travel_r ASSIGNING FIELD-SYMBOL(<ls_travel_r>).
+
+*      APPEND INITIAL LINE TO it_travel ASSIGNING FIELD-SYMBOL(<fs_travel>).
+*      <fs_travel>-%cid = keys[ key entity TravelId = <ls_travel_r>-TravelId ]-%cid.
+*      <fs_travel>-%data = CORRESPONDING #( <ls_travel_r> EXCEPT TravelId ).
+
+      APPEND VALUE #( %cid = keys[ KEY entity TravelId = <ls_travel_r>-TravelId ]-%cid
+                      %data = CORRESPONDING #( <ls_travel_r> EXCEPT TravelId  ) )
+                      TO it_travel ASSIGNING FIELD-SYMBOL(<ls_travel_n>).
+
+      <ls_travel_n>-BeginDate = cl_abap_context_info=>get_system_date( ).
+      <ls_travel_n>-EndDate = cl_abap_context_info=>get_system_date( ) + 30.
+      <ls_travel_n>-OverallStatus = 'O'.
+
+      APPEND VALUE #( %cid_ref = <ls_travel_n>-%cid ) TO it_booking_cba ASSIGNING FIELD-SYMBOL(<ls_booking>).
+
+      LOOP AT lt_booking_r ASSIGNING FIELD-SYMBOL(<ls_booking_r>)
+                           USING KEY entity
+                           WHERE TravelId = <ls_travel_r>-TravelId .
+
+        APPEND VALUE #( %cid = <ls_travel_n>-%cid && <ls_booking_r>-BookingId
+                       %data = CORRESPONDING #( <ls_booking_r> EXCEPT TravelId ) )
+                       TO <ls_booking>-%target ASSIGNING FIELD-SYMBOL(<ls_booking_n>).
+
+        <ls_booking_n>-BookingStatus = 'N'.
+
+        APPEND VALUE #( %cid_ref = <ls_booking_n>-%cid ) TO it_booksuppl_cba ASSIGNING FIELD-SYMBOL(<ls_booksuppl>).
+
+        LOOP AT lt_booksuppl_r ASSIGNING FIELD-SYMBOL(<ls_booksuppl_r>)
+                               USING KEY entity
+                               WHERE TravelId = <ls_travel_r>-TravelId
+                                 AND BookingId = <ls_booking_r>-BookingId.
+
+          APPEND VALUE #( %cid = <ls_travel_n>-%cid && <ls_booking_r>-BookingId && <ls_booksuppl_r>-BookingSupplementId
+                      %data = CORRESPONDING #( <ls_booksuppl_r> EXCEPT TravelId BookingId ) )
+                      TO <ls_booksuppl>-%target ASSIGNING FIELD-SYMBOL(<ls_booksupp_n>).
+        ENDLOOP.
+      ENDLOOP.
+    ENDLOOP.
+
+    MODIFY ENTITIES OF zaj_i_m_travel IN LOCAL MODE
+     ENTITY zaj_i_m_travel
+     CREATE FIELDS ( AgencyId CustomerId BeginDate EndDate BookingFee TotalPrice CurrencyCode OverallStatus Description )
+     WITH it_travel
+     ENTITY zaj_i_m_travel
+     CREATE BY \_Booking
+     FIELDS ( BookingId BookingDate CustomerId CarrierId ConnectionId FlightDate FlightPrice CurrencyCode BookingStatus )
+     WITH it_booking_cba
+     ENTITY zaj_i_m_booking
+     CREATE BY \_Bookingsuppl
+     FIELDS ( BookingSupplementId SupplementId Price CurrencyCode )
+     WITH it_booksuppl_cba
+     MAPPED DATA(it_mapped).
+
+
+    mapped-zaj_i_m_travel = it_mapped-zaj_i_m_travel.
+
+  ENDMETHOD.
+
+  METHOD reCalcTotPrice.
+  ENDMETHOD.
+
+  METHOD rejectTravel.
+  ENDMETHOD.
+
+ENDCLASS.

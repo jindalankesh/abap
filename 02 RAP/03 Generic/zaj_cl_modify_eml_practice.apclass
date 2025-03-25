@@ -1,0 +1,95 @@
+CLASS zaj_cl_modify_eml_practice DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+    INTERFACES if_oo_adt_classrun.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS zaj_cl_modify_eml_practice IMPLEMENTATION.
+
+  METHOD if_oo_adt_classrun~main.
+
+*   data lt_book type table for create zaj_i_m_travel\_Booking.
+*
+*    MODIFY ENTITY zaj_i_m_travel
+*    CREATE FROM VALUE #(
+*    (  %cid = 'cid1'
+*    %data-BeginDate = '20250325'
+*    %control-BeginDate = if_abap_behv=>mk-on
+*
+*    ) )
+*
+*    CREATE BY \_Booking
+*    FROM VALUE #( (
+*
+*    %cid_ref = 'cid1'
+*    %target = VALUE #( (
+*    %cid = 'cid11'
+*    %data-BookingDate = '20250325'
+*    %control-BookingDate = if_abap_behv=>mk-on
+*
+*    ) )
+*
+*     ) )
+*
+*    FAILED FINAL(it_failed)
+*    MAPPED FINAL(it_mapped)
+*    REPORTED FINAL(it_reported).
+*
+*    IF it_failed IS NOT INITIAL.
+*      out->write( it_failed ).
+*    ELSE.
+**    out->write( it_failed ).
+*    ENDIF.
+
+* Delete record from entity
+*    MODIFY ENTITY zaj_i_m_travel
+*    DELETE FROM VALUE #( ( %key-TravelId = '00004501'  ) )
+*    FAILED FINAL(it_failed)
+*    MAPPED FINAL(it_mapped)
+*    REPORTED FINAL(it_reported).
+
+*  Create value with auto fill CID REF
+*      MODIFY ENTITY zaj_i_m_travel
+*    CREATE AUTO FILL CID with VALUE #(
+*    (
+*    %data-BeginDate = '20250325'
+*    %control-BeginDate = if_abap_behv=>mk-on
+*
+*    ) )
+*    FAILED FINAL(it_failed)
+*    MAPPED FINAL(it_mapped)
+*    REPORTED FINAL(it_reported).
+*
+*    IF it_failed IS NOT INITIAL.
+*      out->write( it_failed ).
+*    ELSE.
+**    out->write( it_failed ).
+*    ENDIF.
+
+
+* Modify Entity Record
+*    MODIFY ENTITIES OF zaj_i_m_travel
+*    ENTITY zaj_i_m_travel
+*    UPDATE FIELDS ( BeginDate )
+*    WITH VALUE #( ( %key-TravelId = '00004499'
+*                    BeginDate = '20250327'    ) )
+*    ENTITY zaj_i_m_travel
+*    DELETE FROM VALUE #( ( %key-TravelId = '00004500' ) ).
+*    COMMIT ENTITIES.
+
+
+    MODIFY ENTITY zaj_i_m_travel
+    UPDATE SET FIELDS WITH VALUE #( ( %key-TravelId = '00004499'
+                        BeginDate = '20250328'    ) ).
+
+    COMMIT ENTITIES.
+
+  ENDMETHOD.
+ENDCLASS.
