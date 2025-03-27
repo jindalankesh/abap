@@ -1,0 +1,5 @@
+@EndUserText.label: 'SD Managed Travel Approver'
+define service ZAJ_SD_M_TRAVEL_APPROVER {
+  expose ZAJ_C_M_TRAVEL_APPROVER;
+  expose ZAJ_C_M_BOOKING_APPROVER;
+}
