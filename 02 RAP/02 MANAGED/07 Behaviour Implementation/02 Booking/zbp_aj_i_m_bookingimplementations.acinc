@@ -3,7 +3,25 @@ CLASS lhc_zaj_i_m_booking DEFINITION INHERITING FROM cl_abap_behavior_handler.
   PRIVATE SECTION.
 
     METHODS earlynumbering_cba_Bookingsupp FOR NUMBERING
-      IMPORTING entities FOR CREATE ZAJ_I_M_BOOKING\_Bookingsuppl.
+      IMPORTING entities FOR CREATE zaj_i_m_booking\_Bookingsuppl.
+    METHODS get_instance_features FOR INSTANCE FEATURES
+      IMPORTING keys REQUEST requested_features FOR zaj_i_m_booking RESULT result.
+    METHODS validateconnection FOR VALIDATE ON SAVE
+      IMPORTING keys FOR zaj_i_m_booking~validateconnection.
+
+    METHODS validatecurrencycode FOR VALIDATE ON SAVE
+      IMPORTING keys FOR zaj_i_m_booking~validatecurrencycode.
+
+    METHODS validatecustomer FOR VALIDATE ON SAVE
+      IMPORTING keys FOR zaj_i_m_booking~validatecustomer.
+
+    METHODS validateflightprice FOR VALIDATE ON SAVE
+      IMPORTING keys FOR zaj_i_m_booking~validateflightprice.
+
+    METHODS validatestatus FOR VALIDATE ON SAVE
+      IMPORTING keys FOR zaj_i_m_booking~validatestatus.
+    METHODS calculatetotalprice FOR DETERMINE ON MODIFY
+      IMPORTING keys FOR zaj_i_m_booking~calculatetotalprice.
 
 ENDCLASS.
 
@@ -57,6 +75,51 @@ CLASS lhc_zaj_i_m_booking IMPLEMENTATION.
       ENDLOOP.
 
     ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD get_instance_features.
+    READ ENTITIES OF zaj_i_m_travel IN LOCAL MODE
+  ENTITY zaj_i_m_travel BY \_Booking
+  FIELDS ( TravelId BookingStatus )
+  WITH CORRESPONDING #( keys )
+  RESULT DATA(lt_booking).
+
+
+    RESULT = VALUE #( FOR ls_booking IN lt_booking
+                      ( %tky = ls_booking-%tky
+                     %features-%assoc-_Bookingsuppl  =
+                        COND #( WHEN  ls_booking-BookingStatus = 'X'
+                                THEN if_abap_behv=>fc-o-disabled
+                                ELSE  if_abap_behv=>fc-o-enabled )
+                                ) ).
+  ENDMETHOD.
+
+  METHOD validateConnection.
+  ENDMETHOD.
+
+  METHOD validateCurrencyCode.
+  ENDMETHOD.
+
+  METHOD validateCustomer.
+  ENDMETHOD.
+
+  METHOD validateFlightPrice.
+  ENDMETHOD.
+
+  METHOD validateStatus.
+  ENDMETHOD.
+
+  METHOD calculateTotalPrice.
+
+  data it_travel type STANDARD TABLE OF zaj_i_m_travel with UNIQUE HASHED KEY key COMPONENTS TravelId.
+
+  it_travel = CORRESPONDING #( keys DISCARDING DUPLICATES MAPPING TravelId = TravelId ).
+
+  MODIFY ENTITIES OF zaj_i_m_travel IN LOCAL MODE
+  ENTITY zaj_i_m_travel
+  EXECUTE reCalcTotPrice
+  FROM CORRESPONDING #( it_travel ).
 
   ENDMETHOD.
 

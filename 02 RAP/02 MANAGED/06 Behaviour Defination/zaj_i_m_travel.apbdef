@@ -16,6 +16,13 @@ early numbering
   action ( features : instance ) rejectTravel result [1] $self;
   factory action copyTravel [1];
   internal action reCalcTotPrice;
+  validation validateCustomer on save { create; field CustomerId; }
+  validation validateDates on save { create; field BeginDate, EndDate; }
+  validation validateStatus on save { create; field OverallStatus; }
+  validation validateCurrencyCode on save { create; field CurrencyCode; }
+  validation validateBookingFee on save { create; field BookingFee; }
+
+  determination calculateTotalPrice on modify { create; field BookingFee, CurrencyCode; }
   create;
   update;
   delete;
@@ -53,6 +60,15 @@ early numbering
   field ( readonly ) TravelId, BookingId, LastChangedAt;
   field ( mandatory ) CarrierId, ConnectionId, FlightDate, BookingStatus;
   field ( mandatory : create, readonly : update ) BookingDate, CustomerId;
+
+  validation validateStatus on save { create; field BookingStatus; }
+  validation validateCustomer on save { create; field CustomerId; }
+  validation validateCurrencyCode on save { create; field CurrencyCode; }
+  validation validateConnection on save { create; field CarrierId, ConnectionId, FlightDate; }
+  validation validateFlightPrice on save { create; field FlightPrice; }
+
+  determination calculateTotalPrice on modify { create; field FlightPrice, CurrencyCode; }
+
   association _Travel;
   association _Bookingsuppl { create ( features : instance ); }
   mapping for yaj_db_m_booking
@@ -84,6 +100,12 @@ early numbering
   field ( readonly ) TravelId, BookingId, BookingSupplementId, LastChangedAt;
   association _Travel;
   field ( mandatory ) price, SupplementId;
+  validation validateCurrencyCode on save { create; field CurrencyCode; }
+  validation validateSupplement on save { create; field SupplementId; }
+  validation validatePrice on save { create; field price; }
+
+  determination calculateTotalPrice on modify { create; field Price, CurrencyCode; }
+
   association _Booking;
   mapping for yaj_db_m_booksup
     {

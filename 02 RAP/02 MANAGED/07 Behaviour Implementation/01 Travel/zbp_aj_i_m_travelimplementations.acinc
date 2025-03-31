@@ -15,6 +15,23 @@ CLASS lhc_zaj_i_m_travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
 
     METHODS rejecttravel FOR MODIFY
       IMPORTING keys FOR ACTION zaj_i_m_travel~rejecttravel RESULT result.
+    METHODS get_instance_features FOR INSTANCE FEATURES
+      IMPORTING keys REQUEST requested_features FOR zaj_i_m_travel RESULT result.
+    METHODS validatecustomer FOR VALIDATE ON SAVE
+      IMPORTING keys FOR zaj_i_m_travel~validatecustomer.
+    METHODS validatebookingfee FOR VALIDATE ON SAVE
+      IMPORTING keys FOR zaj_i_m_travel~validatebookingfee.
+
+    METHODS validatecurrencycode FOR VALIDATE ON SAVE
+      IMPORTING keys FOR zaj_i_m_travel~validatecurrencycode.
+
+    METHODS validatedates FOR VALIDATE ON SAVE
+      IMPORTING keys FOR zaj_i_m_travel~validatedates.
+
+    METHODS validatestatus FOR VALIDATE ON SAVE
+      IMPORTING keys FOR zaj_i_m_travel~validatestatus.
+    METHODS calculatetotalprice FOR DETERMINE ON MODIFY
+      IMPORTING keys FOR zaj_i_m_travel~calculatetotalprice.
 
     METHODS earlynumbering_cba_booking FOR NUMBERING
       IMPORTING entities FOR CREATE zaj_i_m_travel\_booking.
@@ -24,8 +41,109 @@ CLASS lhc_zaj_i_m_travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
 ENDCLASS.
 
 CLASS lhc_zaj_i_m_travel IMPLEMENTATION.
+  METHOD get_instance_features.
 
+    READ ENTITIES OF zaj_i_m_travel IN LOCAL MODE
+    ENTITY zaj_i_m_travel
+    FIELDS ( TravelId OverallStatus )
+    WITH CORRESPONDING #( keys )
+    RESULT DATA(lt_travel).
+
+
+    RESult = VALUE #( FOR ls_travel IN lt_travel
+                      ( %tky = ls_travel-%tky
+                        %features-%action-acceptTravel =
+                        COND #( WHEN  ls_travel-OverallStatus = 'A'
+                                THEN if_abap_behv=>fc-o-disabled
+                                ELSE  if_abap_behv=>fc-o-enabled )
+                        %features-%action-rejectTravel =
+                        COND #( WHEN  ls_travel-OverallStatus = 'X'
+                                THEN if_abap_behv=>fc-o-disabled
+                                ELSE  if_abap_behv=>fc-o-enabled )
+                      %features-%assoc-_Booking  =
+                       COND #( WHEN  ls_travel-OverallStatus = 'X'
+                                THEN if_abap_behv=>fc-o-disabled
+                                ELSE  if_abap_behv=>fc-o-enabled )
+                              ) ).
+  ENDMETHOD.
   METHOD reCalcTotPrice.
+
+    TYPES: BEGIN OF ty_total,
+             price TYPE /dmo/total_price,
+             curr  TYPE /dmo/currency_code,
+           END OF ty_total.
+
+    DATA: lt_total      TYPE TABLE OF ty_total,
+          lv_conv_price TYPE ty_total-price.
+
+    READ ENTITIES OF  zaj_i_m_travel IN LOCAL MODE
+    ENTITY zaj_i_m_travel
+    FIELDS ( BookingFee CurrencyCode )
+    WITH CORRESPONDING #( keys )
+    RESULT DATA(lt_travel).
+
+    READ ENTITIES OF  zaj_i_m_travel IN LOCAL MODE
+    ENTITY zaj_i_m_travel BY \_Booking
+    FIELDS ( FlightPrice CurrencyCode )
+    WITH CORRESPONDING #( lt_travel )
+    RESULT DATA(lt_ba_booking).
+
+
+    READ ENTITIES OF  zaj_i_m_travel IN LOCAL MODE
+    ENTITY zaj_i_m_booking BY \_Bookingsuppl
+    FIELDS ( Price CurrencyCode )
+    WITH CORRESPONDING #( lt_ba_booking )
+    RESULT DATA(lt_ba_booksuppl).
+
+    LOOP AT lt_travel ASSIGNING FIELD-SYMBOL(<ls_travel>).
+
+      lt_total =  VALUE #( ( price = <ls_travel>-BookingFee curr = <ls_travel>-CurrencyCode ) ).
+
+      LOOP AT lt_ba_booking ASSIGNING FIELD-SYMBOL(<ls_booking>)
+                                 USING KEY entity
+                                  WHERE TravelId = <ls_travel>-TravelId
+                                  AND CurrencyCode IS NOT INITIAL.
+
+        APPEND VALUE #( price = <ls_booking>-FlightPrice curr = <ls_booking>-CurrencyCode )
+           TO lt_total.
+
+        LOOP AT lt_ba_booksuppl ASSIGNING FIELD-SYMBOL(<ls_booksuppl>)
+                                          USING KEY entity
+                                          WHERE TravelId = <ls_booking>-TravelId
+                                           AND  BookingId = <ls_booking>-BookingId
+                                            AND CurrencyCode IS NOT INITIAL.
+          APPEND VALUE #( price = <ls_booksuppl>-Price curr = <ls_booksuppl>-CurrencyCode )
+           TO lt_total.
+        ENDLOOP.
+      ENDLOOP.
+
+      LOOP AT lt_total ASSIGNING FIELD-SYMBOL(<ls_total>).
+
+        IF <ls_total>-curr = <ls_travel>-CurrencyCode.
+          lv_conv_price = <ls_total>-price.
+        ELSE.
+
+          /dmo/cl_flight_amdp=>convert_currency(
+            EXPORTING
+              iv_amount               =  <ls_total>-price
+              iv_currency_code_source = <ls_total>-curr
+              iv_currency_code_target = <ls_travel>-CurrencyCode
+              iv_exchange_rate_date   = cl_abap_context_info=>get_system_date( )
+            IMPORTING
+             ev_amount               = lv_conv_price
+          ).
+
+        ENDIF.
+
+        <ls_travel>-TotalPrice =  <ls_travel>-TotalPrice + lv_conv_price.
+      ENDLOOP.
+    ENDLOOP.
+
+    MODIFY ENTITIES OF zaj_i_m_travel IN LOCAL MODE
+    ENTITY zaj_i_m_travel
+    UPDATE FIELDS ( TotalPrice )
+    WITH CORRESPONDING #( lt_travel ).
+
   ENDMETHOD.
   METHOD acceptTravel.
 
@@ -48,11 +166,11 @@ CLASS lhc_zaj_i_m_travel IMPLEMENTATION.
   ENDMETHOD.
   METHOD rejectTravel.
 
-  MODIFY ENTITIES OF zaj_i_m_travel IN LOCAL MODE
-    ENTITY zaj_i_m_travel
-    UPDATE FIELDS ( OverallStatus )
-    WITH VALUE #( FOR ls_keys IN keys ( %tky = ls_keys-%tky
-                                        OverallStatus = 'X' ) ).
+    MODIFY ENTITIES OF zaj_i_m_travel IN LOCAL MODE
+      ENTITY zaj_i_m_travel
+      UPDATE FIELDS ( OverallStatus )
+      WITH VALUE #( FOR ls_keys IN keys ( %tky = ls_keys-%tky
+                                          OverallStatus = 'X' ) ).
 
     READ ENTITIES OF  zaj_i_m_travel IN LOCAL MODE
     ENTITY zaj_i_m_travel
@@ -258,6 +376,139 @@ CLASS lhc_zaj_i_m_travel IMPLEMENTATION.
 
     mapped-zaj_i_m_travel = it_mapped-zaj_i_m_travel.
 
+  ENDMETHOD.
+
+
+
+  METHOD validateCustomer.
+
+    READ ENTITY IN LOCAL MODE zaj_i_m_travel
+    FIELDS ( CustomerId )
+    WITH CORRESPONDING #( keys )
+    RESULT DATA(lt_travel).
+
+    DATA :lt_cust TYPE SORTED TABLE OF /dmo/customer WITH UNIQUE KEY customer_id.
+
+    lt_cust = CORRESPONDING #( lt_travel DISCARDING DUPLICATES MAPPING customer_id = CustomerId ).
+
+    DELETE lt_cust WHERE customer_id IS INITIAL.
+
+
+    SELECT
+    FROM /dmo/customer
+    FIELDS customer_id
+    FOR ALL ENTRIES IN @lt_cust
+    WHERE customer_id = @lt_cust-customer_id
+    INTO TABLE @DATA(lt_cust_db).
+
+    IF sy-subrc IS INITIAL.
+
+      LOOP AT lt_travel ASSIGNING FIELD-SYMBOL(<ls_travel>).
+
+        IF <ls_travel>-CustomerId IS INITIAL
+            OR line_exists( lt_cust_db[ customer_id = <ls_travel>-CustomerId ] ).
+
+          APPEND VALUE #( %tky = <ls_travel>-%tky ) TO failed-zaj_i_m_travel.
+          APPEND VALUE #( %tky = <ls_travel>-%tky
+                          %msg = NEW /dmo/cm_flight_messages(
+                            textid = /dmo/cm_flight_messages=>customer_unkown
+                            customer_id = <ls_travel>-CustomerId
+                            severity = if_abap_behv_message=>severity-error
+                            )
+                          %element-Customerid = if_abap_behv=>mk-on
+                        ) TO reported-zaj_i_m_travel.
+
+        ENDIF.
+
+
+
+      ENDLOOP.
+
+    ENDIF.
+
+
+
+  ENDMETHOD.
+
+  METHOD validateBookingFee.
+  ENDMETHOD.
+
+  METHOD validateCurrencyCode.
+  ENDMETHOD.
+
+  METHOD validateDates.
+    READ ENTITIES OF zaj_i_m_travel IN LOCAL MODE
+              ENTITY zaj_i_m_travel
+                FIELDS ( BeginDate EndDate )
+                WITH CORRESPONDING #( keys )
+              RESULT DATA(lt_travels).
+
+    LOOP AT lt_travels INTO DATA(travel).
+
+      IF travel-EndDate < travel-BeginDate.  "end_date before begin_date
+
+        APPEND VALUE #( %tky = travel-%tky ) TO failed-zaj_i_m_travel.
+
+        APPEND VALUE #( %tky = travel-%tky
+                        %msg = NEW /dmo/cm_flight_messages(
+                                   textid     = /dmo/cm_flight_messages=>begin_date_bef_end_date
+                                   severity   = if_abap_behv_message=>severity-error
+                                   begin_date = travel-BeginDate
+                                   end_date   = travel-EndDate
+                                   travel_id  = travel-TravelId )
+                        %element-BeginDate   = if_abap_behv=>mk-on
+                        %element-EndDate     = if_abap_behv=>mk-on
+                     ) TO reported-zaj_i_m_travel.
+
+      ELSEIF travel-BeginDate < cl_abap_context_info=>get_system_date( ).  "begin_date must be in the future
+
+        APPEND VALUE #( %tky        = travel-%tky ) TO failed-zaj_i_m_travel.
+
+        APPEND VALUE #( %tky = travel-%tky
+                        %msg = NEW /dmo/cm_flight_messages(
+                                    textid   = /dmo/cm_flight_messages=>begin_date_on_or_bef_sysdate
+                                    severity = if_abap_behv_message=>severity-error )
+                        %element-BeginDate  = if_abap_behv=>mk-on
+                        %element-EndDate    = if_abap_behv=>mk-on
+                      ) TO reported-zaj_i_m_travel.
+      ENDIF.
+
+    ENDLOOP.
+  ENDMETHOD.
+
+  METHOD validateStatus.
+    READ ENTITIES OF zaj_i_m_travel IN LOCAL MODE
+        ENTITY zaj_i_m_travel
+          FIELDS ( OverallStatus )
+          WITH CORRESPONDING #( keys )
+        RESULT DATA(lt_travels).
+
+    LOOP AT lt_travels INTO DATA(ls_travel).
+      CASE ls_travel-OverallStatus.
+        WHEN 'O'.  " Open
+        WHEN 'X'.  " Cancelled
+        WHEN 'A'.  " Accepted
+
+        WHEN OTHERS.
+          APPEND VALUE #( %tky = ls_travel-%tky ) TO failed-zaj_i_m_travel.
+
+          APPEND VALUE #( %tky = ls_travel-%tky
+                          %msg = NEW /dmo/cm_flight_messages(
+                                     textid = /dmo/cm_flight_messages=>status_invalid
+                                     severity = if_abap_behv_message=>severity-error
+                                     status = ls_travel-OverallStatus )
+                          %element-OverallStatus = if_abap_behv=>mk-on
+                        ) TO reported-zaj_i_m_travel.
+      ENDCASE.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD calculateTotalPrice.
+    MODIFY ENTITIES OF zaj_i_m_travel IN LOCAL MODE
+  ENTITY zaj_i_m_travel
+  EXECUTE reCalcTotPrice
+  FROM CORRESPONDING #( keys ).
   ENDMETHOD.
 
 ENDCLASS.
