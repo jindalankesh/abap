@@ -25,6 +25,45 @@ ENDCLASS.
 
 CLASS lhc_zaj_i_m_travel IMPLEMENTATION.
 
+  METHOD reCalcTotPrice.
+  ENDMETHOD.
+  METHOD acceptTravel.
+
+    MODIFY ENTITIES OF zaj_i_m_travel IN LOCAL MODE
+    ENTITY zaj_i_m_travel
+    UPDATE FIELDS ( OverallStatus )
+    WITH VALUE #( FOR ls_keys IN keys ( %tky = ls_keys-%tky
+                                        OverallStatus = 'A' ) ).
+
+    READ ENTITIES OF  zaj_i_m_travel IN LOCAL MODE
+    ENTITY zaj_i_m_travel
+    ALL FIELDS WITH CORRESPONDING #( keys )
+    RESULT DATA(lt_result).
+
+    result = VALUE #( FOR ls_result
+                IN lt_result ( %tky = ls_result-%tky
+                               %param = ls_result    ) ).
+
+
+  ENDMETHOD.
+  METHOD rejectTravel.
+
+  MODIFY ENTITIES OF zaj_i_m_travel IN LOCAL MODE
+    ENTITY zaj_i_m_travel
+    UPDATE FIELDS ( OverallStatus )
+    WITH VALUE #( FOR ls_keys IN keys ( %tky = ls_keys-%tky
+                                        OverallStatus = 'X' ) ).
+
+    READ ENTITIES OF  zaj_i_m_travel IN LOCAL MODE
+    ENTITY zaj_i_m_travel
+    ALL FIELDS WITH CORRESPONDING #( keys )
+    RESULT DATA(lt_result).
+
+    result = VALUE #( FOR ls_result
+                IN lt_result ( %tky = ls_result-%tky
+                               %param = ls_result    ) ).
+  ENDMETHOD.
+
   METHOD get_instance_authorizations.
   ENDMETHOD.
 
@@ -133,8 +172,7 @@ CLASS lhc_zaj_i_m_travel IMPLEMENTATION.
 
   ENDMETHOD.
 
-  METHOD acceptTravel.
-  ENDMETHOD.
+
 
   METHOD copyTravel.
 
@@ -220,12 +258,6 @@ CLASS lhc_zaj_i_m_travel IMPLEMENTATION.
 
     mapped-zaj_i_m_travel = it_mapped-zaj_i_m_travel.
 
-  ENDMETHOD.
-
-  METHOD reCalcTotPrice.
-  ENDMETHOD.
-
-  METHOD rejectTravel.
   ENDMETHOD.
 
 ENDCLASS.
