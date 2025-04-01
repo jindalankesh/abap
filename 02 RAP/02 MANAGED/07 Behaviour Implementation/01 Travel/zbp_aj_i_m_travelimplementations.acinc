@@ -1,3 +1,167 @@
+CLASS lsc_zaj_i_m_travel DEFINITION INHERITING FROM cl_abap_behavior_saver.
+
+  PROTECTED SECTION.
+
+    METHODS save_modified REDEFINITION.
+
+ENDCLASS.
+
+CLASS lsc_zaj_i_m_travel IMPLEMENTATION.
+
+  METHOD save_modified.
+   DATA : lt_travel_log TYPE STANDARD TABLE OF yaj_db_m_trvlog.
+    DATA : lt_travel_log_c TYPE STANDARD TABLE OF yaj_db_m_trvlog.
+    DATA : lt_travel_log_u TYPE STANDARD TABLE OF yaj_db_m_trvlog.
+
+    IF  create-zaj_i_m_travel IS NOT INITIAL.
+
+      lt_travel_log = CORRESPONDING #( create-zaj_i_m_travel ).
+
+      LOOP AT lt_travel_log ASSIGNING FIELD-SYMBOL(<ls_travel_log>).
+
+        <ls_travel_log>-changing_operation = 'CREATE'.
+        GET TIME STAMP FIELD <ls_travel_log>-created_at.
+
+        READ TABLE create-zaj_i_m_travel  ASSIGNING FIELD-SYMBOL(<ls_travel>)
+                                 WITH TABLE KEY entity
+                                 COMPONENTS TravelId = <ls_travel_log>-travelid.
+        IF sy-subrc IS INITIAL.
+
+          IF <ls_travel>-%control-BookingFee = cl_abap_behv=>flag_changed.
+            <ls_travel_log>-changed_field_name = 'Booking Fee'.
+            <ls_travel_log>-changed_value  = <ls_travel>-BookingFee.
+            TRY.
+                <ls_travel_log>-change_id = cl_system_uuid=>create_uuid_x16_static( ).
+              CATCH cx_uuid_error.
+                "handle exception
+            ENDTRY.
+
+            APPEND <ls_travel_log> TO lt_travel_log_c.
+
+          ENDIF.
+          IF <ls_travel>-%control-OverallStatus = cl_abap_behv=>flag_changed.
+            <ls_travel_log>-changed_field_name = 'Overall Status'.
+            <ls_travel_log>-changed_value  = <ls_travel>-OverallStatus.
+            TRY.
+                <ls_travel_log>-change_id = cl_system_uuid=>create_uuid_x16_static( ).
+              CATCH cx_uuid_error.
+                "handle exception
+            ENDTRY.
+
+            APPEND <ls_travel_log> TO lt_travel_log_c.
+
+          ENDIF.
+
+        ENDIF.
+      ENDLOOP.
+
+      INSERT  yaj_db_m_trvlog FROM TABLE @lt_travel_log_c.
+    ENDIF.
+
+
+    IF  update-zaj_i_m_travel IS NOT INITIAL.
+      lt_travel_log = CORRESPONDING #( update-zaj_i_m_travel ).
+
+      LOOP AT update-zaj_i_m_travel ASSIGNING FIELD-SYMBOL(<ls_log_update>).
+        ASSIGN lt_travel_log[ travelid = <ls_log_update>-travelid ] TO FIELD-SYMBOL(<ls_log_u>).
+
+        <ls_log_u>-changing_operation = 'UPDATE'.
+        GET TIME STAMP FIELD <ls_log_u>-created_at.
+
+        IF <ls_log_update>-%control-customerid = if_abap_behv=>mk-on.
+          <ls_log_u>-changed_value = <ls_log_update>-customerid.
+          TRY.
+              <ls_log_u>-change_id = cl_system_uuid=>create_uuid_x16_static( ) .
+            CATCH cx_uuid_error.
+          ENDTRY.
+          <ls_log_u>-changed_field_name = 'customer_id'.
+          APPEND <ls_log_u> TO lt_travel_log_u.
+        ENDIF.
+
+        IF <ls_log_update>-%control-description = if_abap_behv=>mk-on.
+          <ls_log_u>-changed_value = <ls_log_update>-description.
+          TRY.
+              <ls_log_u>-change_id = cl_system_uuid=>create_uuid_x16_static( ) .
+            CATCH cx_uuid_error.
+          ENDTRY.
+          <ls_log_u>-changed_field_name = 'description'.
+          APPEND <ls_log_u> TO lt_travel_log_u.
+        ENDIF.
+      ENDLOOP.
+      INSERT yaj_db_m_trvlog FROM TABLE @lt_travel_log_u.
+    ENDIF.
+
+
+    IF  delete-zaj_i_m_travel IS NOT INITIAL.
+
+      lt_travel_log = CORRESPONDING #( delete-zaj_i_m_travel ).
+      LOOP AT lt_travel_log ASSIGNING FIELD-SYMBOL(<ls_log_del>).
+        <ls_log_del>-changing_operation = 'DELETE'.
+        GET TIME STAMP FIELD <ls_log_del>-created_at.
+        TRY.
+            <ls_log_del>-change_id = cl_system_uuid=>create_uuid_x16_static( ) .
+          CATCH cx_uuid_error.
+            "handle exception
+        ENDTRY.
+      ENDLOOP.
+
+      " Inserts rows specified in lt_travel_log into the DB table /dmo/log_travel
+      INSERT yaj_db_m_trvlog FROM TABLE @lt_travel_log.
+
+    ENDIF.
+
+***********************************************************************
+***********************************************************************
+*
+*    DATA: lt_book_suppl TYPE STANDARD TABLE OF yaj_db_m_booksup.
+*    IF create-zaj_i_m_bookingsuppl IS NOT INITIAL.
+*
+*      lt_book_suppl = VALUE #( FOR ls_booksup IN  create-yi_booksuppl_tech_m (
+*                                           travel_id  = ls_booksup-TravelId
+*                                           booking_id = ls_booksup-BookingId
+*                                           booking_supplement_id  = ls_booksup-BookingSupplementId
+*                                           supplement_id   = ls_booksup-SupplementId
+*                                           price   = ls_booksup-Price
+*                                           currency_code    = ls_booksup-CurrencyCode
+*                                           last_changed_at = ls_booksup-LastChangedAt
+*                                             )  ).
+*
+*      INSERT ybooksupp_tech_m FROM TABLE @lt_book_suppl.
+*
+*    endif.
+*      IF update-yi_booksuppl_tech_m IS NOT INITIAL.
+*
+*        lt_book_suppl = VALUE #( FOR ls_booksup IN  update-yi_booksuppl_tech_m (
+*                                          travel_id  = ls_booksup-TravelId
+*                                          booking_id = ls_booksup-BookingId
+*                                          booking_supplement_id  = ls_booksup-BookingSupplementId
+*                                          supplement_id   = ls_booksup-SupplementId
+*                                          price   = ls_booksup-Price
+*                                          currency_code    = ls_booksup-CurrencyCode
+*                                          last_changed_at = ls_booksup-LastChangedAt
+*                                            )  ).
+*
+*
+*        UPDATE ybooksupp_tech_m FROM TABLE @lt_book_suppl.
+*
+*      ENDIF.
+*      IF delete-yi_booksuppl_tech_m IS NOT INITIAL.
+*
+*        lt_book_suppl = VALUE #( FOR ls_del IN  delete-yi_booksuppl_tech_m (
+*                                           travel_id  = ls_del-TravelId
+*                                           booking_id = ls_del-BookingId
+*                                           booking_supplement_id  = ls_del-BookingSupplementId
+*                                             )  ).
+*
+*
+*        DELETE ybooksupp_tech_m FROM TABLE @lt_book_suppl.
+*
+*      ENDIF.
+
+  ENDMETHOD.
+
+ENDCLASS.
+
 CLASS lhc_zaj_i_m_travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
   PRIVATE SECTION.
 
@@ -408,15 +572,15 @@ CLASS lhc_zaj_i_m_travel IMPLEMENTATION.
         IF <ls_travel>-CustomerId IS INITIAL
             OR line_exists( lt_cust_db[ customer_id = <ls_travel>-CustomerId ] ).
 
-          APPEND VALUE #( %tky = <ls_travel>-%tky ) TO failed-zaj_i_m_travel.
-          APPEND VALUE #( %tky = <ls_travel>-%tky
-                          %msg = NEW /dmo/cm_flight_messages(
-                            textid = /dmo/cm_flight_messages=>customer_unkown
-                            customer_id = <ls_travel>-CustomerId
-                            severity = if_abap_behv_message=>severity-error
-                            )
-                          %element-Customerid = if_abap_behv=>mk-on
-                        ) TO reported-zaj_i_m_travel.
+*          APPEND VALUE #( %tky = <ls_travel>-%tky ) TO failed-zaj_i_m_travel.
+*          APPEND VALUE #( %tky = <ls_travel>-%tky
+*                          %msg = NEW /dmo/cm_flight_messages(
+*                            textid = /dmo/cm_flight_messages=>customer_unkown
+*                            customer_id = <ls_travel>-CustomerId
+*                            severity = if_abap_behv_message=>severity-error
+*                            )
+*                          %element-Customerid = if_abap_behv=>mk-on
+*                        ) TO reported-zaj_i_m_travel.
 
         ENDIF.
 

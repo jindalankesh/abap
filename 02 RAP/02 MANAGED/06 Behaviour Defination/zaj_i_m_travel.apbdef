@@ -1,9 +1,10 @@
-managed;//implementation in class zbp_aj_i_m_travel unique;
+managed implementation in class zbp_aj_i_m_travel unique;//implementation in class zbp_aj_i_m_travel unique;
 strict ( 2 );
 
 define behavior for zaj_i_m_travel //alias Travel
 implementation in class zbp_aj_i_m_travel unique
 persistent table yaj_db_m_travel
+with additional save
 lock master
 authorization master ( instance )
 etag master LastChangedAt
