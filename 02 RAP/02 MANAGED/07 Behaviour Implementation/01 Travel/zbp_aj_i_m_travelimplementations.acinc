@@ -110,53 +110,53 @@ CLASS lsc_zaj_i_m_travel IMPLEMENTATION.
 
     ENDIF.
 
-***********************************************************************
-***********************************************************************
-*
-*    DATA: lt_book_suppl TYPE STANDARD TABLE OF yaj_db_m_booksup.
-*    IF create-zaj_i_m_bookingsuppl IS NOT INITIAL.
-*
-*      lt_book_suppl = VALUE #( FOR ls_booksup IN  create-yi_booksuppl_tech_m (
-*                                           travel_id  = ls_booksup-TravelId
-*                                           booking_id = ls_booksup-BookingId
-*                                           booking_supplement_id  = ls_booksup-BookingSupplementId
-*                                           supplement_id   = ls_booksup-SupplementId
-*                                           price   = ls_booksup-Price
-*                                           currency_code    = ls_booksup-CurrencyCode
-*                                           last_changed_at = ls_booksup-LastChangedAt
-*                                             )  ).
-*
-*      INSERT ybooksupp_tech_m FROM TABLE @lt_book_suppl.
-*
-*    endif.
-*      IF update-yi_booksuppl_tech_m IS NOT INITIAL.
-*
-*        lt_book_suppl = VALUE #( FOR ls_booksup IN  update-yi_booksuppl_tech_m (
-*                                          travel_id  = ls_booksup-TravelId
-*                                          booking_id = ls_booksup-BookingId
-*                                          booking_supplement_id  = ls_booksup-BookingSupplementId
-*                                          supplement_id   = ls_booksup-SupplementId
-*                                          price   = ls_booksup-Price
-*                                          currency_code    = ls_booksup-CurrencyCode
-*                                          last_changed_at = ls_booksup-LastChangedAt
-*                                            )  ).
-*
-*
-*        UPDATE ybooksupp_tech_m FROM TABLE @lt_book_suppl.
-*
-*      ENDIF.
-*      IF delete-yi_booksuppl_tech_m IS NOT INITIAL.
-*
-*        lt_book_suppl = VALUE #( FOR ls_del IN  delete-yi_booksuppl_tech_m (
-*                                           travel_id  = ls_del-TravelId
-*                                           booking_id = ls_del-BookingId
-*                                           booking_supplement_id  = ls_del-BookingSupplementId
-*                                             )  ).
-*
-*
-*        DELETE ybooksupp_tech_m FROM TABLE @lt_book_suppl.
-*
-*      ENDIF.
+**********************************************************************
+**********************************************************************
+
+    DATA: lt_book_suppl TYPE STANDARD TABLE OF yaj_db_m_booksup.
+    IF create-zaj_i_m_bookingsuppl IS NOT INITIAL.
+
+      lt_book_suppl = VALUE #( FOR ls_booksup IN  create-zaj_i_m_bookingsuppl (
+                                           travel_id  = ls_booksup-TravelId
+                                           booking_id = ls_booksup-BookingId
+                                           booking_supplement_id  = ls_booksup-BookingSupplementId
+                                           supplement_id   = ls_booksup-SupplementId
+                                           price   = ls_booksup-Price
+                                           currency_code    = ls_booksup-CurrencyCode
+                                           last_changed_at = ls_booksup-LastChangedAt
+                                             )  ).
+
+      INSERT yaj_db_m_booksup FROM TABLE @lt_book_suppl.
+
+    endif.
+      IF update-zaj_i_m_bookingsuppl IS NOT INITIAL.
+
+        lt_book_suppl = VALUE #( FOR ls_booksup IN  update-zaj_i_m_bookingsuppl (
+                                          travel_id  = ls_booksup-TravelId
+                                          booking_id = ls_booksup-BookingId
+                                          booking_supplement_id  = ls_booksup-BookingSupplementId
+                                          supplement_id   = ls_booksup-SupplementId
+                                          price   = ls_booksup-Price
+                                          currency_code    = ls_booksup-CurrencyCode
+                                          last_changed_at = ls_booksup-LastChangedAt
+                                            )  ).
+
+
+        UPDATE yaj_db_m_booksup FROM TABLE @lt_book_suppl.
+
+      ENDIF.
+      IF delete-zaj_i_m_bookingsuppl IS NOT INITIAL.
+
+        lt_book_suppl = VALUE #( FOR ls_del IN  delete-zaj_i_m_bookingsuppl (
+                                           travel_id  = ls_del-TravelId
+                                           booking_id = ls_del-BookingId
+                                           booking_supplement_id  = ls_del-BookingSupplementId
+                                             )  ).
+
+
+        DELETE yaj_db_m_booksup FROM TABLE @lt_book_suppl.
+
+      ENDIF.
 
   ENDMETHOD.
 

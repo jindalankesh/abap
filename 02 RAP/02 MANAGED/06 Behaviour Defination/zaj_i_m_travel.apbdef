@@ -90,7 +90,8 @@ early numbering
 
 define behavior for zaj_i_m_bookingsuppl //alias <alias_name>
 implementation in class zbp_aj_i_m_bookingsuppl unique
-persistent table yaj_db_m_booksup
+//persistent table yaj_db_m_booksup
+with unmanaged save with full data
 lock dependent by _Travel
 authorization dependent by _Travel
 etag master LastChangedAt
