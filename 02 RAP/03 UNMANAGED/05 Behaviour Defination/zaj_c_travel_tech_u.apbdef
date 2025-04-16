@@ -1,0 +1,21 @@
+projection;
+strict ( 2 );
+
+define behavior for ZAJ_C_Travel_tech_U //alias <alias_name>
+use etag
+{
+  use create;
+  use update;
+  use delete;
+
+  use association _Booking { create; }
+}
+
+define behavior for ZAJ_C_Booking_tech_U //alias <alias_name>
+use etag
+{
+  use update;
+  use delete;
+
+  use association _Travel;
+}

@@ -1,0 +1,5 @@
+CLASS zbp_aj_i_traval_tech_h_u DEFINITION PUBLIC ABSTRACT FINAL FOR BEHAVIOR OF zaj_i_traval_tech_u.
+ENDCLASS.
+
+CLASS zbp_aj_i_traval_tech_h_u IMPLEMENTATION.
+ENDCLASS.
